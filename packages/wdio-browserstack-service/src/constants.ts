@@ -29,7 +29,9 @@ export const DEFAULT_OPTIONS: Partial<BrowserstackConfig> = {
 
 export const consoleHolder: typeof console = Object.assign({}, console)
 
-export const DATA_ENDPOINT = 'https://collector-observability.browserstack.com'
+// export const DATA_ENDPOINT = 'https://collector-observability.browserstack.com'
+export const DATA_ENDPOINT = 'http://localhost:3000'
+
 export const DATA_EVENT_ENDPOINT = 'api/v1/event'
 export const DATA_BATCH_ENDPOINT = 'api/v1/batch'
 export const DATA_SCREENSHOT_ENDPOINT = 'api/v1/screenshots'
