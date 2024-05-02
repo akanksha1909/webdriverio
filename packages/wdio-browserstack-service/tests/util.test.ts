@@ -40,7 +40,8 @@ import {
     uploadLogs
 } from '../src/util.js'
 import * as bstackLogger from '../src/bstackLogger.js'
-import { TESTOPS_BUILD_COMPLETED_ENV, TESTOPS_JWT_ENV } from '../src/constants.js'
+import { TESTOPS_BUILD_COMPLETED_ENV, BROWSERSTACK_TESTHUB_JWT } from '../src/constants.js'
+import * as testHubUtils from '../src/testHub/utils.js'
 
 const log = logger('test')
 
@@ -651,7 +652,7 @@ describe('stopBuildUpstream', () => {
 
     it('return error if completed but jwt token not present', async () => {
         process.env[TESTOPS_BUILD_COMPLETED_ENV] = 'true'
-        delete process.env[TESTOPS_JWT_ENV]
+        delete process.env[BROWSERSTACK_TESTHUB_JWT]
 
         const result: any = await stopBuildUpstream()
 
@@ -662,7 +663,7 @@ describe('stopBuildUpstream', () => {
 
     it('return success if completed', async () => {
         process.env[TESTOPS_BUILD_COMPLETED_ENV] = 'true'
-        process.env[TESTOPS_JWT_ENV] = 'jwt'
+        process.env[BROWSERSTACK_TESTHUB_JWT] = 'jwt'
 
         mockedGot.put = vi.fn().mockReturnValue({
             json: () => Promise.resolve({}),
@@ -675,7 +676,7 @@ describe('stopBuildUpstream', () => {
 
     it('return error if failed', async () => {
         process.env[TESTOPS_BUILD_COMPLETED_ENV] = 'true'
-        process.env[TESTOPS_JWT_ENV] = 'jwt'
+        process.env[BROWSERSTACK_TESTHUB_JWT] = 'jwt'
 
         mockedGot.put = vi.fn().mockReturnValue({
             json: () => Promise.reject({}),
@@ -694,13 +695,14 @@ describe('stopBuildUpstream', () => {
 describe('launchTestSession', () => {
     const mockedGot = vi.mocked(got)
     vi.mocked(gitRepoInfo).mockReturnValue({} as any)
+    vi.spyOn(testHubUtils, 'getProductMap').mockReturnValue({} as any)
 
     it('return undefined if completed', async () => {
         mockedGot.post = vi.fn().mockReturnValue({
             json: () => Promise.resolve({ build_hashed_id: 'build_id', jwt: 'jwt' }),
         } as any)
 
-        const result: any = await launchTestSession( { framework: 'framework' } as any, { }, {})
+        const result: any = await launchTestSession( { framework: 'framework' } as any, { }, {}, {})
         expect(got.post).toBeCalledTimes(1)
         expect(result).toEqual(undefined)
     })
@@ -1065,40 +1067,6 @@ describe('createAccessibilityTestRun', () => {
         expect(got).toBeCalledTimes(1)
         expect(result).toEqual(null)
         expect(logInfoMock.mock.calls[3][0]).contains('Exception while creating test run for BrowserStack Accessibility Automation')
-    })
-
-    afterEach(() => {
-        (got as vi.Mock).mockClear()
-    })
-})
-
-describe('stopAccessibilityTestRun', () => {
-    beforeEach (() => {
-        vi.mocked(gitRepoInfo).mockReturnValue({} as any)
-    })
-
-    it('return error object if ally token not defined', async () => {
-        process.env.BSTACK_A11Y_JWT = undefined
-        const result: any = await utils.stopAccessibilityTestRun()
-        expect(result).toEqual({ 'message': 'Build creation had failed.', 'status': 'error' })
-    })
-
-    it('return success object if ally token defined and no error in response data', async () => {
-        process.env.BSTACK_A11Y_JWT = 'someToken'
-        vi.mocked(got).mockReturnValue({
-            json: () => Promise.resolve({ data: {} }),
-        } as any)
-        const result: any = await utils.stopAccessibilityTestRun()
-        expect(result).toEqual({ 'message': '', 'status': 'success' })
-    })
-
-    it('return error object if ally token defined and no error in response data', async () => {
-        process.env.BSTACK_A11Y_JWT = 'someToken'
-        vi.mocked(got).mockReturnValue({
-            json: () => Promise.resolve({ data: { error: 'Some Error occurred' } }),
-        } as any)
-        const result: any = await utils.stopAccessibilityTestRun()
-        expect(result).toEqual({ 'message': 'Invalid request: Some Error occurred', 'status': 'error' })
     })
 
     afterEach(() => {

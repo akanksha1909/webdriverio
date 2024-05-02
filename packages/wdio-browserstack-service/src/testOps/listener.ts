@@ -7,11 +7,13 @@ import {
     DATA_BATCH_ENDPOINT,
     DEFAULT_WAIT_INTERVAL_FOR_PENDING_UPLOADS,
     DEFAULT_WAIT_TIMEOUT_FOR_PENDING_UPLOADS,
-    LOG_KIND_USAGE_MAP, TESTOPS_BUILD_COMPLETED_ENV
+    LOG_KIND_USAGE_MAP, TESTOPS_BUILD_COMPLETED_ENV,
+    TEST_ANALYTICS_ID
 } from '../constants.js'
 import { sendScreenshots } from './requestUtils.js'
 import { BStackLogger } from '../bstackLogger.js'
-
+import { shouldProcessEventForTesthub } from '../testHub/utils.js'
+import { shouldScanTestForAccessibility } from '../util.js'
 class Listener {
     private static instance: Listener
     private readonly usageStats: UsageStats = UsageStats.getInstance()
@@ -23,6 +25,7 @@ class Listener {
     private readonly logEvents: FeatureStats = this.usageStats.logStats
     private requestBatcher?: RequestQueueHandler
     private pendingUploads = 0
+    private static _accessibilityOptions?: { [key: string]: any; }
 
     // Making the constructor private to use singleton pattern
     private constructor() {
@@ -33,6 +36,10 @@ class Listener {
             Listener.instance = new Listener()
         }
         return Listener.instance
+    }
+
+    public static setAccessibilityOptions(options:  { [key: string]: any; } | undefined) {
+        Listener._accessibilityOptions = options
     }
 
     public async onWorkerEnd() {
@@ -62,6 +69,9 @@ class Listener {
 
     public hookStarted(hookData: TestData): void {
         try {
+            if (!shouldProcessEventForTesthub('HookRunStarted')) {
+                return
+            }
             this.hookStartedStats.triggered()
             this.sendBatchEvents(this.getEventForHook('HookRunStarted', hookData))
         } catch (e) {
@@ -72,6 +82,9 @@ class Listener {
 
     public hookFinished(hookData: TestData): void {
         try {
+            if (!shouldProcessEventForTesthub('HookRunFinished')) {
+                return
+            }
             this.hookFinishedStats.triggered(hookData.result)
             this.sendBatchEvents(this.getEventForHook('HookRunFinished', hookData))
         } catch (e) {
@@ -82,6 +95,10 @@ class Listener {
 
     public testStarted(testData: TestData): void {
         try {
+            if (!shouldProcessEventForTesthub('TestRunStarted')) {
+                return
+            }
+            process.env[TEST_ANALYTICS_ID] = testData.uuid
             this.testStartedStats.triggered()
             this.sendBatchEvents(this.getEventForHook('TestRunStarted', testData))
         } catch (e) {
@@ -92,6 +109,13 @@ class Listener {
 
     public testFinished(testData: TestData): void {
         try {
+            if (!shouldProcessEventForTesthub('TestRunFinished')) {
+                return
+            }
+            const shouldScanTest = shouldScanTestForAccessibility('', testData.name!, Listener._accessibilityOptions)
+            testData.product_map = {
+                accessibility: shouldScanTest
+            }
             this.testFinishedStats.triggered(testData.result)
             this.sendBatchEvents(this.getEventForHook('TestRunFinished', testData))
         } catch (e) {
@@ -102,6 +126,9 @@ class Listener {
 
     public logCreated(logs: LogData[]): void {
         try {
+            if (!shouldProcessEventForTesthub('LogCreated')) {
+                return
+            }
             this.markLogs('triggered', logs)
             this.sendBatchEvents({
                 event_type: 'LogCreated', logs: logs
@@ -133,6 +160,9 @@ class Listener {
 
     public cbtSessionCreated(data: CBTData): void {
         try {
+            if (!shouldProcessEventForTesthub('CBTSessionCreated')) {
+                return
+            }
             this.cbtSessionStats.triggered()
             this.sendBatchEvents({ event_type: 'CBTSessionCreated', test_run: data })
         } catch (e) {

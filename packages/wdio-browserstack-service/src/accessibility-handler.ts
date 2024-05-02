@@ -179,14 +179,9 @@ class _AccessibilityHandler {
             }
 
             const dataForExtension = {
-                saveResults: shouldScanTestForAccessibility,
-                testDetails: {
-                    'name': test.title,
-                    'testRunId': process.env.BS_A11Y_TEST_RUN_ID,
-                    'filePath': this._suiteFile,
-                    'scopeList': [suiteTitle, test.title]
-                },
-                platform: this._platformA11yMeta
+                'thTestRunUuid': process.env.TEST_ANALYTICS_ID,
+                'thBuildUuid': process.env.BROWSERSTACK_TESTHUB_UUID,
+                'thJwtToken': process.env.BROWSERSTACK_TESTHUB_JWT
             }
 
             await this.sendTestStopEvent((this._browser as WebdriverIO.Browser), dataForExtension)
@@ -242,8 +237,6 @@ class _AccessibilityHandler {
 
         const pickleData = world.pickle
         try {
-            const gherkinDocument = world.gherkinDocument
-            const featureData = gherkinDocument.feature
             const uniqueId = getUniqueIdentifierForCucumber(world)
             const accessibilityScanStarted = this._testMetadata[uniqueId]?.accessibilityScanStarted
             const shouldScanTestForAccessibility = this._testMetadata[uniqueId]?.scanTestForAccessibility
@@ -257,14 +250,9 @@ class _AccessibilityHandler {
             }
 
             const dataForExtension = {
-                saveResults: shouldScanTestForAccessibility,
-                testDetails: {
-                    'name': pickleData.name,
-                    'testRunId': process.env.BS_A11Y_TEST_RUN_ID,
-                    'filePath': gherkinDocument.uri,
-                    'scopeList': [featureData?.name, pickleData.name]
-                },
-                platform: this._platformA11yMeta
+                'thTestRunUuid': process.env.TEST_ANALYTICS_ID,
+                'thBuildUuid': process.env.BROWSERSTACK_TESTHUB_UUID,
+                'thJwtToken': process.env.BROWSERSTACK_TESTHUB_JWT
             }
 
             await this.sendTestStopEvent(( this._browser as WebdriverIO.Browser), dataForExtension)
