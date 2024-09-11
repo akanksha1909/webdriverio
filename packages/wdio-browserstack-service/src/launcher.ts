@@ -290,6 +290,7 @@ export default class BrowserstackLauncherService implements Services.ServiceInst
         }
 
         if (this._options.percy) {
+            console.log("hello")
             try {
                 const bestPlatformPercyCaps = getBestPlatformForPercySnapshot(capabilities)
                 this._percyBestPlatformCaps = bestPlatformPercyCaps
