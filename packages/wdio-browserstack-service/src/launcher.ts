@@ -411,6 +411,7 @@ export default class BrowserstackLauncherService implements Services.ServiceInst
         BStackLogger.clearLogger()
 
         if (this._options.percy) {
+            console.log('hello')
             await this.stopPercy()
         }
 
